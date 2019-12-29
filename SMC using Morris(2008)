@@ -1,0 +1,111 @@
+## Meta-analysis(Morris)
+
+library(readxl)
+library(compute.es)
+library(MAd)
+library(metafor)
+
+install.packages("writexl")
+library(writexl)
+write_xlsx(dat_AS, path = "c:dat_AS.xlsx")
+
+setwd("C:/r_temp")
+
+SP <- read_xlsx("DATA.xlsx", sheet = 1)
+
+## Computing standardized mean change for each group
+
+datT <- escalc(measure="SMCR", m1i=m_postT, m2i=m_preT, sd1i=sd_preT, ni=n_preT, ri=riT*0.5, data=SP)
+datC <- escalc(measure="SMCR", m1i=m_postC, m2i=m_preC, sd1i=sd_preC, ni=n_preC, ri=riC*0.5, data=SP)
+
+## Computing the difference in the standardized mean change
+
+dat <- data.frame(yi = datT$yi - datC$yi, vi = datT$vi + datC$vi)
+dat <- round(dat, 2)
+dat_SP <- cbind(dat, SP[, 5:6])
+
+## Estimating the sampling variance
+
+## Actual meta-analysis
+
+mSP2<- rma(yi, vi, data=dat_SP, method="REML", digits=2, slab=paste(Author, DOP, sep = ", "))
+
+## forest plot
+
+par(mar=c(4,4,1,2))
+forest(mSP2, xlim=c(-16,6), ylim=c(-1,8), ilab=cbind(SP$n_preT, SP$n_preC), ilab.xpos=c(-8, -6), cex=0.75, 
+       xlab="Standardized Mean Change", mlab="")
+
+op<- par(cex=0.75, font=4)
+
+
+## Fail Safe N
+fsn(yi, vi, data=dat_SP, type="Rosenthal", alpha=.05, digit=2)
+
+## Meta regression
+SP <- read_xlsx("DATA.xlsx", sheet = 1)
+datT <- escalc(measure="SMCR", m1i=m_postT, m2i=m_preT, sd1i=sd_preT, ni=n_preT, ri=riT*0.5, data=SP)
+datC <- escalc(measure="SMCR", m1i=m_postC, m2i=m_preC, sd1i=sd_preC, ni=n_preC, ri=riC*0.5, data=SP)
+dat <- data.frame(yi = datT$yi - datC$yi, vi = datT$vi + datC$vi)
+dat <- round(dat, 2)
+dat_SP <- cbind(dat, SP[, 5:6],MOD[, c(2:18)])
+mSP2<- rma(yi, vi, data=dat_SP, method="REML", digits=2, mods=PANSSn, slab=paste(Author, DOP, sep = ", "))
+
+## Mental State Attribution
+MSA <- read_xlsx("DATA.xlsx", sheet = 2)
+datT <- escalc(measure="SMCR", m1i=m_postT, m2i=m_preT, sd1i=sd_preT, ni=n_preT, ri=riT*0.5, data=MSA)
+datC <- escalc(measure="SMCR", m1i=m_postC, m2i=m_preC, sd1i=sd_preC, ni=n_preC, ri=riC*0.5, data=MSA)
+dat <- data.frame(yi = datT$yi - datC$yi, vi = datT$vi + datC$vi)
+dat <- round(dat, 2)
+dat_MSA <- cbind(dat, MSA[, 5:6])
+mMSA2<- rma(yi, vi, data=dat_MSA, method="REML", digits=2, slab=paste(Author, DOP, sep = ", "))
+fsn(yi, vi, data=dat_MSA, type="Rosenthal", alpha=.05, digit=2)
+install.packages("writexl")
+library(writexl)
+write_xlsx(dat_MSA, path = "c:dat_MSA.xlsx")
+
+## Attributional Style - Random Variable Model
+AS <- read_xlsx("DATA.xlsx", sheet = 3)
+datT <- escalc(measure="SMCR", m1i=m_postT, m2i=m_preT, sd1i=sd_preT, ni=n_preT, ri=riT*0.5, data=AS)
+datC <- escalc(measure="SMCR", m1i=m_postC, m2i=m_preC, sd1i=sd_preC, ni=n_preC, ri=riC*0.5, data=AS)
+dat <- data.frame(yi = datT$yi - datC$yi, vi = datT$vi + datC$vi)
+dat <- round(dat, 2)
+dat_AS <- cbind(dat, AS[, 1], AS[, 6:7])
+
+mAS2<- rma(yi, vi, data=dat_AS, method="REML", digits=2, slab=paste(Author, DOP, sep = ", "))
+mHB2<- rma(yi, vi, data=dat_AS, method="REML", digits=2, subset=(alloc=='HB'))
+mBB2<- rma(yi, vi, data=dat_AS, method="REML", digits=2, subset=(alloc=='BB'))
+mAB2<- rma(yi, vi, data=dat_AS, method="REML", digits=2, subset=(alloc=='AB'))
+
+## subgroup analysis
+
+dat.comp <- data.frame(estimate = c(coef(mHB2), coef(mBB2), coef(mAB2)), stderror = c(mHB2$se, mBB2$se, mAB2$se),
+                       meta = c("HB","BB", "AB"), tau2 = round(c(mHB2$tau2, mBB2$tau2, mAB2$tau2),3))
+dat.comp
+
+rma(estimate, sei=stderror, mods = ~ meta, method="FE", data=dat.comp, digits=3)
+
+## meta regression with moderator
+
+mAS2<- rma(yi, vi, data=dat_AS, method="REML", mods=~alloc, digits=2, slab=paste(Author, DOP, sep = ", "))
+
+fsn(yi, vi, data=dat_AS, subset=(alloc=='HB'))
+fsn(yi, vi, data=dat_AS, subset=(alloc=='BB'))
+fsn(yi, vi, data=dat_AS, subset=(alloc=='AB'))
+
+## Attributional Style - Fixed Variable Model
+AS <- read_xlsx("DATA.xlsx", sheet = 3)
+datT <- escalc(measure="SMCR", m1i=m_postT, m2i=m_preT, sd1i=sd_preT, ni=n_preT, ri=riT*0.5, data=AS)
+datC <- escalc(measure="SMCR", m1i=m_postC, m2i=m_preC, sd1i=sd_preC, ni=n_preC, ri=riC*0.5, data=AS)
+dat <- data.frame(yi = datT$yi - datC$yi, vi = datT$vi + datC$vi)
+dat <- round(dat, 2)
+dat_AS <- cbind(dat, AS[, 1], AS[, 6:7])
+
+mAS2<- rma(yi, vi, data=dat_AS, method="REML", digits=2, slab=paste(Author, DOP, sep = ", "))
+mHB2<- rma(yi, vi, data=dat_AS, method="FE", digits=2, subset=(alloc=='HB'))
+mBB2<- rma(yi, vi, data=dat_AS, method="FE", digits=2, subset=(alloc=='BB'))
+mAB2<- rma(yi, vi, data=dat_AS, method="FE", digits=2, subset=(alloc=='AB'))
+
+fsn(yi, vi, data=dat_AS, subset=(alloc=='HB'))
+fsn(yi, vi, data=dat_AS, subset=(alloc=='BB'))
+fsn(yi, vi, data=dat_AS, subset=(alloc=='AB'))
