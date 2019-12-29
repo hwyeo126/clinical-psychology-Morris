@@ -11,24 +11,25 @@ write_xlsx(dat_AS, path = "c:dat_AS.xlsx")
 
 setwd("C:/r_temp")
 
-SP <- read_xlsx("DATA.xlsx", sheet = 1)
+mydata <- read_xlsx("DATA.xlsx", sheet = 1)
 
 ## Computing standardized mean change for each group
 
-datT <- escalc(measure="SMCR", m1i=m_postT, m2i=m_preT, sd1i=sd_preT, ni=n_preT, ri=riT*0.5, data=SP)
-datC <- escalc(measure="SMCR", m1i=m_postC, m2i=m_preC, sd1i=sd_preC, ni=n_preC, ri=riC*0.5, data=SP)
+datT <- escalc(measure="SMCR", m1i=m_postT, m2i=m_preT, sd1i=sd_preT, ni=n_preT, ri=riT*0.5, data=mydata)
+datC <- escalc(measure="SMCR", m1i=m_postC, m2i=m_preC, sd1i=sd_preC, ni=n_preC, ri=riC*0.5, data=mydata)
 
 ## Computing the difference in the standardized mean change
 
 dat <- data.frame(yi = datT$yi - datC$yi, vi = datT$vi + datC$vi)
-dat <- round(dat, 2)
-dat_SP <- cbind(dat, SP[, 5:6])
+dat2 <- cbind(mydata, dat)
 
-## Estimating the sampling variance
+
+## Estimating the sampling variance (based on equation 13 in Becker, 1988)
 
 ## Actual meta-analysis
 
-mSP2<- rma(yi, vi, data=dat_SP, method="REML", digits=2, slab=paste(Author, DOP, sep = ", "))
+res<- rma(yi, vi, data=dat2, method="REML", digits=2, slab=paste(Author, DOP, sep = ", "))
+write_xlsx(dat2, path = "c:datSP2.xlsx")
 
 ## forest plot
 
