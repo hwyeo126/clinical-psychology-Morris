@@ -1,4 +1,4 @@
-## Meta-analysis(Kurtz)
+## Meta-analysis
 
 library(readxl)
 library(compute.es)
@@ -11,9 +11,11 @@ setwd("C:/r_temp")
 
 
 ## Effect-size calculation
-SP <- read_xlsx("DATA_SP.xlsx", sheet = 1)
-dat<-escalc(measure="SMD", n1i=n_postT, n2i=n_postC, m1i=m_postT, m2i=m_postC, sd1i=sd_postT, sd2i=sd_postC, data=SP, slab=paste(Author, DOP, sep = ", "), digits=4)
-res <- rma(yi, vi, data=dat) 
+data <- read_xlsx("3 SP.xlsx", sheet = 1)
+dat<-escalc(measure="SMD", n1i=n_postT, n2i=n_postC, m1i=m_postT, m2i=m_postC, sd1i=sd_postT, sd2i=sd_postC, data=data, slab=paste(Author, DOP, sep = ", "), digits=4)
+res <- rma(yi, vi, data=dat)
+
+write_xlsx(dat, path = "c:datSP.xlsx")
 
 predict(res, digits=3)
 confint(res)  
@@ -50,6 +52,15 @@ funnel(res, xlab = "Standard Mean Difference")
 #Tests for bias
 regtest(res)
 ranktest(res)
+
+#Trim and fill
+
+dat_bias <- read.csv("dat_bias.csv") 
+View(dat_bias)
+
+res.b <- rma(yi, vi, data=dat_bias) 
+res.b 
+confint(res.b)  
 
 # Moderators (all use a meta-regression model)
 
@@ -92,3 +103,6 @@ mes_ss <-  robu(formula = yi ~ 1, data = dat_mes, studynum = id, var.eff.size = 
 print(mes_ss)
 
 # The output confirms that there were 16 effect sizes from 14 studies. Analysis indicates a statistically significant point estimate [0.15; 95% CI (0.08, 0.22), p = 0.001]. 
+
+
+
