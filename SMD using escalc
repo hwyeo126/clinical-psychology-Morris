@@ -1,0 +1,103 @@
+## Meta-analysis(Kurtz)
+
+library(readxl)
+library(compute.es)
+library(MAd)
+library(metafor)
+library(meta)
+
+
+setwd("C:/r_temp")
+
+
+## Effect-size calculation
+SP <- read_xlsx("DATA_SP.xlsx", sheet = 1)
+dat<-escalc(measure="SMD", n1i=n_postT, n2i=n_postC, m1i=m_postT, m2i=m_postC, sd1i=sd_postT, sd2i=sd_postC, data=SP, slab=paste(Author, DOP, sep = ", "), digits=4)
+res <- rma(yi, vi, data=dat) 
+
+predict(res, digits=3)
+confint(res)  
+
+b_res <- rma(yi, vi, data=dat, slab=ES.ID)
+baujat(b_res)
+
+inf <- influence(res)
+print(inf)
+plot(inf)
+
+## forest plot
+par(mar=c(4,4,1,2))
+forest(res, xlim=c(-16,6), ylim=c(-1,8), ilab=cbind(SP$n_postT, SP$n_postC), ilab.xpos=c(-8, -6), cex=0.75, 
+       xlab="Standardized Mean Difference", mlab="")
+
+op<- par(cex=0.75, font=4)
+text(-16, 7, pos=4, c("Social Perception"))
+par(font=4) 
+
+text(c(-8, -6), 6.5, c("tx(n)", "ctr(n)"))
+text(-16, 6.5, "Author(s) and Year", pos=4)
+text(6, 6.5, "SMD [95% CI]", pos=2)
+
+par(op)
+
+text(-16, -1, pos=4, cex=0.75, bquote(paste("RE Model (Q = ",
+                                            .(formatC(mSP$QE, digits=2, format="f")), ", df = ", .(mSP$k - mSP$p),
+                                            ", p = ", .(formatC(mSP$QEp, digits=2, format="f")), "; ", I^2, " = ",
+                                            .(formatC(mSP$I2, digits=1, format="f")), "%)")))
+### funnel plot
+funnel(res, xlab = "Standard Mean Difference")
+
+#Tests for bias
+regtest(res)
+ranktest(res)
+
+#Trim and fill
+
+dat_bias <- read.csv("dat_bias.csv") 
+View(dat_bias)
+
+res.b <- rma(yi, vi, data=dat_bias) 
+res.b 
+confint(res.b)  
+
+# Moderators (all use a meta-regression model)
+
+# Moderating effect of age
+
+res.modage <- rma(yi, vi, mods = ~ age, data=dat) 
+res.modage 
+
+# The data under the "Test of Moderators" line provides the information needed. As the p value was greater than 0.05, this provides evidence that age did not significantly moderate the observed correlation. 
+
+# Moderator for methodological quality 
+
+res.modq <- rma(yi, vi, mods = ~ quality, data=dat) 
+res.modq 
+
+# As the p value was greater than 0.05, this provides evidence that methodological quality  did not significantly moderate the observed correlation.
+
+# Moderator for a categorical variable. Here we look at the moderating effect of whether variables were controlled for.
+
+res.mes <- rma(yi, vi, mods = ~ factor(type), data=dat) 
+res.mes 
+
+# As the p value was less than 0.05, this provides evidence that controlling for variables significantly moderates the observed correlation
+
+# Accounting for multiple effect sizes from individual studies using robust variation estimation
+
+# First we import a data set aggregating the first 3 studies from the original dataset. As mentioed above, this command will only work if the "dat_mes" file is located in your working directory.
+
+dat_mes <- read.csv("dat_mes.csv") 
+View(dat_mes)
+
+# Calculate the effect size and effect size variances 
+
+dat_mes <- escalc(measure="ZCOR", ri=r, ni=n, data=dat_mes)
+
+# Fit the meta-regression model with correction for small sample size
+
+mes_ss <-  robu(formula = yi ~ 1, data = dat_mes, studynum = id, var.eff.size = vi, modelweights = "HIER", small = TRUE)
+
+print(mes_ss)
+
+# The output confirms that there were 16 effect sizes from 14 studies. Analysis indicates a statistically significant point estimate [0.15; 95% CI (0.08, 0.22), p = 0.001]. 
