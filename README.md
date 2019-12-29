@@ -1,1 +1,1 @@
-# clinical-psychology-meta analysis
+# clinical-psychology-metaanalysis
