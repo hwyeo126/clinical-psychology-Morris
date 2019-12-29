@@ -51,15 +51,6 @@ funnel(res, xlab = "Standard Mean Difference")
 regtest(res)
 ranktest(res)
 
-#Trim and fill
-
-dat_bias <- read.csv("dat_bias.csv") 
-View(dat_bias)
-
-res.b <- rma(yi, vi, data=dat_bias) 
-res.b 
-confint(res.b)  
-
 # Moderators (all use a meta-regression model)
 
 # Moderating effect of age
